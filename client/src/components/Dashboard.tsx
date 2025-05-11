@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import DateRangeFilter from "./DateRangeFilter";
+import type { DateFilter } from "./DateRangeFilter";
 
 interface User {
   login: string;
@@ -25,8 +27,13 @@ interface PRSearchResponse {
 function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
+  const [filteredPRs, setFilteredPRs] = useState<PullRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<DateFilter>({
+    startDate: "",
+    endDate: "",
+  });
 
   useEffect(() => {
     // Fetch user data
@@ -48,10 +55,50 @@ function Dashboard() {
         if (!res.ok) throw new Error("Failed to fetch pull requests");
         return res.json();
       })
-      .then((data: PRSearchResponse) => setPullRequests(data.items))
+      .then((data: PRSearchResponse) => {
+        setPullRequests(data.items);
+        setFilteredPRs(data.items);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    applyDateFilter();
+  }, [dateFilter, pullRequests]);
+
+  const applyDateFilter = () => {
+    let filtered = [...pullRequests];
+
+    if (dateFilter.startDate) {
+      const startDate = new Date(dateFilter.startDate);
+      filtered = filtered.filter((pr) => new Date(pr.created_at) >= startDate);
+    }
+
+    if (dateFilter.endDate) {
+      const endDate = new Date(dateFilter.endDate);
+      // Set to end of the day
+      endDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((pr) => new Date(pr.created_at) <= endDate);
+    }
+
+    setFilteredPRs(filtered);
+  };
+
+  const handleDateFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setDateFilter((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const clearFilters = () => {
+    setDateFilter({
+      startDate: "",
+      endDate: "",
+    });
+  };
 
   if (loading) {
     return <div className="p-4">Loading...</div>;
@@ -79,11 +126,21 @@ function Dashboard() {
 
       <h2 className="text-xl font-semibold mb-4">Your Pull Requests</h2>
 
-      {pullRequests.length === 0 ? (
-        <p className="text-gray-500">No pull requests found.</p>
+      <DateRangeFilter
+        dateFilter={dateFilter}
+        onFilterChange={handleDateFilterChange}
+        onClearFilters={clearFilters}
+        totalCount={pullRequests.length}
+        filteredCount={filteredPRs.length}
+      />
+
+      {filteredPRs.length === 0 ? (
+        <p className="text-gray-500">
+          No pull requests found for the selected criteria.
+        </p>
       ) : (
         <div className="grid gap-4">
-          {pullRequests.map((pr) => {
+          {filteredPRs.map((pr) => {
             // Extract repo name from repository_url
             const repoName = pr.repository_url.split("/").slice(-2).join("/");
 
@@ -119,7 +176,9 @@ function Dashboard() {
                   </span>
                 </div>
                 <div className="mt-2 text-xs text-gray-500">
-                  Updated {new Date(pr.updated_at).toLocaleDateString()}
+                  Created: {new Date(pr.created_at).toLocaleDateString()}
+                  <span className="mx-2">•</span>
+                  Updated: {new Date(pr.updated_at).toLocaleDateString()}
                 </div>
               </div>
             );
