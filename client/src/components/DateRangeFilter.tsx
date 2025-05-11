@@ -21,7 +21,7 @@ function DateRangeFilter({
   filteredCount,
 }: DateRangeFilterProps) {
   return (
-    <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+    <div>
       <h3 className="text-lg font-medium mb-3">Filter by date range</h3>
       <div className="flex flex-wrap gap-4 items-end">
         <div>

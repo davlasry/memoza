@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import DateRangeFilter from "./DateRangeFilter";
+import DateRangePresets from "./DateRangePresets";
 import type { DateFilter } from "./DateRangeFilter";
 
 interface User {
@@ -93,6 +94,10 @@ function Dashboard() {
     }));
   };
 
+  const handleSelectPreset = (preset: DateFilter) => {
+    setDateFilter(preset);
+  };
+
   const clearFilters = () => {
     setDateFilter({
       startDate: "",
@@ -126,13 +131,19 @@ function Dashboard() {
 
       <h2 className="text-xl font-semibold mb-4">Your Pull Requests</h2>
 
-      <DateRangeFilter
-        dateFilter={dateFilter}
-        onFilterChange={handleDateFilterChange}
-        onClearFilters={clearFilters}
-        totalCount={pullRequests.length}
-        filteredCount={filteredPRs.length}
-      />
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <DateRangePresets
+          onSelectPreset={handleSelectPreset}
+          currentFilter={dateFilter}
+        />
+        <DateRangeFilter
+          dateFilter={dateFilter}
+          onFilterChange={handleDateFilterChange}
+          onClearFilters={clearFilters}
+          totalCount={pullRequests.length}
+          filteredCount={filteredPRs.length}
+        />
+      </div>
 
       {filteredPRs.length === 0 ? (
         <p className="text-gray-500">
